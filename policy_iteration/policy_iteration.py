@@ -5,12 +5,22 @@ def run_episode(env, policy, gamma = 1.0, render = False):
     observation = env.reset()
     total_reward = 0
     step_idx = 0
+
+    observation = observation[0]
+
+
     while True:
         if render:
             env.render()
-        observation, reward, done, _ = env.step(int(policy[observation]))
-        total_reward += (gamma ** step_idx * reward)
-        step_idx += 1
+
+        action = int(policy[observation])
+        try:
+            observation, reward, done, truncated, _ = env.step(action)
+            total_reward += (gamma ** step_idx * reward)
+            step_idx += 1
+        except Exception as e:
+            print(f"An error occurred during the episode: {e}")
+            break
         if done:
             break
 
@@ -18,9 +28,10 @@ def run_episode(env, policy, gamma = 1.0, render = False):
 
 def test_episode(env, policy):
     observation = env.reset()
+    observation = observation[0]
     while True:
         env.render()
-        observation, _, done, _ = env.step(int(policy[observation]))
+        observation, _, done, truncted, _ = env.step(int(policy[observation]))
         if done:
             break
 
@@ -72,8 +83,8 @@ def policy_iteration(env, gamma=1.0):
 
 
 if __name__ == '__main__':
-    env_name  = 'FrozenLake8x8-v0' # 'FrozenLake-v0'
-    env = gym.make(env_name)
+    env_name  = 'FrozenLake8x8-v1' # 'FrozenLake-v0'
+    env = gym.make(env_name, render_mode="human")
     optimal_policy = policy_iteration(env, gamma = 1.0)
     score = evaluate_policy(env, optimal_policy, gamma = 1.0)
     print('Average scores = ', score)
