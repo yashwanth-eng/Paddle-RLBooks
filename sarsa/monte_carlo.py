@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -18,21 +19,37 @@ class environment:
         self.Q = np.zeros((self.nS, self.nA)) # Q-value function
         self.state = 0  # Initial state
 
-        self.grid  = np.zeros((nRow, nCol))  # Initialize the grid
-        # Define the grid size
+        self.grid_reset()
+
+        
+
+        self.render()
+
+
+    def grid_reset(self):
+
+        self.grid  = np.zeros((self.nRow, self.nCol))  # Initialize the grid
+     
         self.grid[0, 1:(self.nCol - 1)] = 1
         # lets make bottom row except for first and last column as cliff
 
         self.grid[0,0] = 3 # start
         self.grid[0, self.nCol - 1] = 2 # goal
 
-        self.render()
+
+
+    def state_to_grid(self, state):
+        row = state // self.nCol
+        col = state % self.nCol
+        return row, col
         
 
         
 
     def reset(self):
         self.state = 0  # Reset to initial state
+        self.grid_reset()
+        self.render()
         return self.state
 
     def step(self, action):
@@ -67,6 +84,9 @@ class environment:
             self.state += 1
         elif action == 3:
             self.state -= self.nCol
+
+
+        self.update_plot(self.state)
 
         # if the state is in the cliff, return -100
         if self.state in range(1, self.nCol - 1):
@@ -120,7 +140,7 @@ class environment:
     
     def render(self):
 
-        fig, ax = plt.subplots()
+        fig, self.ax = plt.subplots()
 
         color_map = ['green','red', 'blue', 'yellow']
 
@@ -130,23 +150,58 @@ class environment:
         norm = mcolors.BoundaryNorm(bounds, cmap.N)
 
         # Display the grid as a color matrix
-        cax = ax.matshow(self.grid, cmap=cmap, norm=norm, interpolation='nearest')
+        cax = self.ax.matshow(self.grid, cmap=cmap, norm=norm, interpolation='nearest')
 
         # Optionally, add a colorbar to show the color mapping
         cbar = fig.colorbar(cax, ticks=[0, 1, 2, 3])
         cbar.ax.set_yticklabels(['green','red', 'blue', 'yellow'])
 
         # Set gridlines for better visibility
-        ax.set_xticks(np.arange(0, self.nCol, 1))
-        ax.set_yticks(np.arange(0, self.nRow, 1))
-        ax.set_xticklabels([])
-        ax.set_yticklabels([])
-        ax.set_xticks(np.arange(-.5, self.nCol, 1), minor=True)
-        ax.set_yticks(np.arange(-.5, self.nRow, 1), minor=True)
-        ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
+        self.ax.set_xticks(np.arange(0, self.nCol, 1))
+        self.ax.set_yticks(np.arange(0, self.nRow, 1))
+        self.ax.set_xticklabels([])
+        self.ax.set_yticklabels([])
+        self.ax.set_xticks(np.arange(-.5, self.nCol, 1), minor=True)
+        self.ax.set_yticks(np.arange(-.5, self.nRow, 1), minor=True)
+        self.ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
 
         plt.show()
 
+    def update_plot(self, state):
+        """
+        Updates the plot to highlight the given state.
+
+        Args:
+            state: The state to highlight on the grid.
+        """
+        # Convert the state to grid coordinates
+        row, col = self.state_to_grid(state)
+
+        # Highlight the current state with yellow (value 4)
+        self.grid[row, col] = 4
+
+        # Update the plot
+        self.ax.clear()  # Clear the previous plot
+        color_map = ['green', 'red', 'blue', 'yellow']
+        cmap = mcolors.ListedColormap(color_map)
+        bounds = [0, 1, 2, 3, 4]
+        norm = mcolors.BoundaryNorm(bounds, cmap.N)
+
+        # Display the updated grid
+        cax = self.ax.matshow(self.grid, cmap=cmap, norm=norm, interpolation='nearest')
+
+
+        # Set gridlines for better visibility
+        self.ax.set_xticks(np.arange(0, self.nCol, 1))
+        self.ax.set_yticks(np.arange(0, self.nRow, 1))
+        self.ax.set_xticklabels([])
+        self.ax.set_yticklabels([])
+        self.ax.set_xticks(np.arange(-.5, self.nCol, 1), minor=True)
+        self.ax.set_yticks(np.arange(-.5, self.nRow, 1), minor=True)
+        self.ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
+
+        # Redraw the plot
+        plt.pause(0.01)
 
 
 
