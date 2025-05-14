@@ -1,5 +1,5 @@
 import numpy as np
-import time
+# Removed unused import
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
@@ -19,11 +19,9 @@ class environment:
         self.Q = np.zeros((self.nS, self.nA)) # Q-value function
         self.state = 0  # Initial state
 
+        fig, self.ax = plt.subplots()
+
         self.grid_reset()
-
-        
-
-        self.render()
 
 
     def grid_reset(self):
@@ -35,6 +33,7 @@ class environment:
 
         self.grid[0,0] = 3 # start
         self.grid[0, self.nCol - 1] = 2 # goal
+        self.render()
 
 
 
@@ -42,6 +41,10 @@ class environment:
         row = state // self.nCol
         col = state % self.nCol
         return row, col
+    
+
+    def grid_to_state(self, row, col):
+        state = row * self.nCol + col
         
 
         
@@ -49,32 +52,31 @@ class environment:
     def reset(self):
         self.state = 0  # Reset to initial state
         self.grid_reset()
-        self.render()
         return self.state
 
     def step(self, action):
 
         # if state is top edge or left edge or right edge, up , left, right action should not be taken
 
-        #top edge
+        #bottom edge
         if ((self.nRow - 1) * self.nCol) <= self.state < self.nRow * self.nCol:
-            if action == 3:
-                return self.state, -100, True
+            if action == 1:
+                return -1, -100, True
         #left edge
         if self.state % self.nCol == 0:
             if action == 0:
-                return self.state, -100, True
+                return -1, -100, True
         #right edge
         if (self.state + 1) % self.nCol == 0:
             if action == 2:
-                return self.state, -100, True
-        #bottom edge
+                return -1, -100, True
+        #top edge 
         if self.state < self.nCol:
-            if action == 1:
-                return self.state, -100, True
+            if action == 3:
+                return -1, -100, True
             
 
-
+        # Actions: 0=left, 1=down, 2=right, 3=up
         # Define the transition and reward logic here
         if action == 0:
             self.state -= 1
@@ -127,7 +129,7 @@ class environment:
             # Choose the action with the highest Q-value for the current state
             action = np.argmax(env.Q[state])
 
-        return action
+        return int(action)
 
 
     def get_policy(env):
@@ -140,8 +142,6 @@ class environment:
     
     def render(self):
 
-        fig, self.ax = plt.subplots()
-
         color_map = ['green','red', 'blue', 'yellow']
 
         # Use a custom colormap with green, blue, and orange
@@ -152,20 +152,21 @@ class environment:
         # Display the grid as a color matrix
         cax = self.ax.matshow(self.grid, cmap=cmap, norm=norm, interpolation='nearest')
 
-        # Optionally, add a colorbar to show the color mapping
-        cbar = fig.colorbar(cax, ticks=[0, 1, 2, 3])
-        cbar.ax.set_yticklabels(['green','red', 'blue', 'yellow'])
+  
+
+        # Add text annotations to the top of the plot
+        self.ax.text(0.5, 1.05, 'Cliff Walking Environment', transform=self.ax.transAxes, 
+                 ha='center', va='center', fontsize=12, fontweight='bold')
+
 
         # Set gridlines for better visibility
         self.ax.set_xticks(np.arange(0, self.nCol, 1))
         self.ax.set_yticks(np.arange(0, self.nRow, 1))
-        self.ax.set_xticklabels([])
-        self.ax.set_yticklabels([])
         self.ax.set_xticks(np.arange(-.5, self.nCol, 1), minor=True)
         self.ax.set_yticks(np.arange(-.5, self.nRow, 1), minor=True)
         self.ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
 
-        plt.show()
+        plt.pause(0.05)  # Pause to update the plot
 
     def update_plot(self, state):
         """
@@ -180,8 +181,6 @@ class environment:
         # Highlight the current state with yellow (value 4)
         self.grid[row, col] = 4
 
-        # Update the plot
-        self.ax.clear()  # Clear the previous plot
         color_map = ['green', 'red', 'blue', 'yellow']
         cmap = mcolors.ListedColormap(color_map)
         bounds = [0, 1, 2, 3, 4]
@@ -189,6 +188,8 @@ class environment:
 
         # Display the updated grid
         cax = self.ax.matshow(self.grid, cmap=cmap, norm=norm, interpolation='nearest')
+
+       
 
 
         # Set gridlines for better visibility
@@ -200,8 +201,8 @@ class environment:
         self.ax.set_yticks(np.arange(-.5, self.nRow, 1), minor=True)
         self.ax.grid(which='minor', color='black', linestyle='-', linewidth=2)
 
-        # Redraw the plot
-        plt.pause(0.01)
+  
+        plt.pause(0.05)
 
 
 
@@ -209,22 +210,28 @@ class environment:
 def monte_carlo(env, num_episodes=1000, gamma=0.9):
 
     for episode in range(num_episodes):
+        print("Episode:", episode)
         # Generate an episode
         env.reset()
         done = False
         rewards = []
         states_visited = []
-        states_visited.append(env.state)
+       
 
         while not done:
+
+            current_state = env.state
+             # Actions: 0=left, 1=down, 2=right, 3=up
             action = env.epsilon_greedy(env.state)
             next_state, reward, done = env.step(action)
 
-            env.Q[env.state, action] += reward
+            env.Q[current_state, action] += reward
 
-            print(next_state, reward, done, action)
+            # print(next_state, reward, done, action)
+            if done or current_state == -1:
+                break
             rewards.append(reward)
-            states_visited.append(next_state)
+            states_visited.append(current_state)
         
 
         # Calculate the cumulative reward for each state
@@ -243,3 +250,6 @@ Cliff_walker = environment(4, 12, 4)
 policy, V = monte_carlo(Cliff_walker, num_episodes=1000, gamma=0.9)
 print("Final Policy:", policy)
 print("Final Value Function:", V.reshape(4, 12))
+
+
+plt.show()
