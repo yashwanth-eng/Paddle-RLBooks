@@ -117,14 +117,12 @@ class environment:
 
         if next_state in self.current_episode_states:
 
-            if self.same_state:
+            if self.same_state == False:
+                self.same_state = True
                 # If the state is already visited, return the current state and a penalty
-                return next_state, -100, False
+                return self.state, -100, False
 
 
-            self.same_state = True
-            # If the state is already visited, return the current state and a penalty
-            return self.state, -100, False
         self.current_episode_states.append(next_state)
 
         row, col = self.state_to_grid(next_state)
@@ -283,10 +281,10 @@ def monte_carlo(env, num_episodes=1000, gamma=0.9):
 
     return env.get_policy(), env.V
 
-Cliff_walker = environment(4, 12, 4)
-policy, V = monte_carlo(Cliff_walker, num_episodes=1000, gamma=0.9)
-print("Final Policy:", policy)
-print("Final Value Function:", V.reshape(4, 12))
+Cliff_walker = environment(4, 5, 4)
+policy, V = monte_carlo(Cliff_walker, num_episodes=100, gamma=0.9)
+print("Final Policy:", policy.reshape(4, 5))
+print("Final Value Function:", V.reshape(4, 5))
 
 
 plt.show()
